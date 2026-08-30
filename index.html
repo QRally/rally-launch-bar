@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rally Launch Bar v1.2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0b0e;
+      --housing-bg: #16161f;
+      --bezel-off: #222230;
+      --red-light: #ff1a00;
+      --red-glow: rgba(255, 26, 0, 0.7);
+      --green-light: #00ff44;
+      --green-glow: rgba(0, 255, 68, 0.7);
+      --digit-color: #00ff44;
+      --digit-glow: rgba(0, 255, 68, 0.5);
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px 12px;
+      box-sizing: border-box;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 550px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Header Title */
+    .app-header {
+      text-align: center;
+      padding-bottom: 4px;
+    }
+
+    .app-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.4rem;
+      color: #fff;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .app-subtitle {
+      font-size: 0.75rem;
+      color: #0088ff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* GPS Input Setup Card */
+    .setup-panel {
+      background: #14141c;
+      border: 1px solid #262636;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.85rem;
+      color: #aaa;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #262636;
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-size: 0.75rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"] {
+      background: #0a0a0f;
+      border: 1px solid #333348;
+      border-radius: 6px;
+      color: #fff;
+      padding: 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #0088ff;
+    }
+
+    /* Launch Bar Housing */
+    .clock-housing {
+      background: var(--housing-bg);
+      border: 3px solid #2a2a38;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.9);
+      clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+    }
+
+    .light-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      height: 50px;
+      background-color: #0c0c10;
+      padding: 6px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      border: 1px solid #1a1a24;
+    }
+
+    .light-block {
+      background-color: var(--bezel-off);
+      border-radius: 4px;
+      transition: background-color 0.05s ease, box-shadow 0.05s ease;
+    }
+
+    .light-block.red {
+      background-color: var(--red-light);
+      box-shadow: 0 0 18px var(--red-glow), inset 0 0 8px #fff;
+    }
+
+    .light-block.green {
+      background-color: var(--green-light);
+      box-shadow: 0 0 22px var(--green-glow), inset 0 0 8px #fff;
+    }
+
+    .display-panel {
+      background-color: #040406;
+      border: 2px solid #1c1c26;
+      border-radius: 6px;
+      padding: 12px 8px;
+      text-align: center;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+    }
+
+    .stage-timer {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      color: var(--digit-color);
+      text-shadow: 0 0 15px var(--digit-glow);
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .status-box {
+      font-size: 0.9rem;
+      font-weight: bold;
+      text-align: center;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Share Tech Mono', monospace;
+      background: #0a0a0f;
+      border-radius: 6px;
+      border: 1px solid #1e1e2c;
+      padding: 4px 8px;
+    }
+
+    .status-standby { color: #888; }
+    .status-arm { color: #ffbb00; }
+    .status-go { color: #00ff44; }
+    .status-finish { color: #0088ff; }
+
+    .telemetry-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .telemetry-card {
+      background: #0a0a0f;
+      border: 1px solid #1e1e2c;
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .telemetry-label {
+      font-size: 0.65rem;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .telemetry-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.95rem;
+      color: #eee;
+    }
+
+    button {
+      background-color: #0066cc;
+      color: #fff;
+      border: 1px solid #0088ff;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button.armed {
+      background-color: #cc2b2b;
+      border-color: #ff4444;
+    }
+
+    /* Stage Logs Table */
+    .log-panel {
+      background: #14141c;
+      border: 1px solid #262636;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .log-table th {
+      text-align: left;
+      color: #666;
+      border-bottom: 1px solid #262636;
+      padding: 6px;
+    }
+
+    .log-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #1a1a24;
+    }
+
+    .log-table tr:first-child td {
+      color: #00ff44;
+    }
+
+    .btn-clear {
+      background: transparent;
+      border: 1px solid #44445c;
+      color: #888;
+      padding: 2px 6px;
+      font-size: 0.65rem;
+      border-radius: 4px;
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <div class="app-header">
+    <h1 class="app-title">Rally Launch Bar</h1>
+    <div class="app-subtitle">GPS Stage Test System v1.2</div>
+  </div>
+
+  <div class="setup-panel">
+    <div class="panel-title">
+      <span>Stage Coordinates</span>
+      <span id="gpsSignal" style="color: #ff4444; font-size: 0.75rem;">GPS: OFF</span>
+    </div>
+
+    <div class="input-group">
+      <label for="startCoords">Start Geofence (Lat, Long)</label>
+      <input type="text" id="startCoords" value="52.146880,-4.056890" placeholder="e.g. 52.146880,-4.056890">
+    </div>
+
+    <div class="input-group">
+      <label for="finishCoords">Finish Geofence (Lat, Long)</label>
+      <input type="text" id="finishCoords" value="52.152100,-4.049800" placeholder="e.g. 52.152100,-4.049800">
+    </div>
+
+    <button id="btnArmStage">ARM GPS STAGE TIMING</button>
+  </div>
+
+  <div class="clock-housing">
+    <div class="light-bar">
+      <div class="light-block"></div>
+      <div class="light-block"></div>
+      <div class="light-block"></div>
+      <div class="light-block"></div>
+      <div class="light-block"></div>
+    </div>
+    
+    <div class="display-panel">
+      <div class="stage-timer" id="stageTimer">00:00.000</div>
+    </div>
+  </div>
+
+  <div class="telemetry-row">
+    <div class="telemetry-card">
+      <div class="telemetry-label">Dist To Start</div>
+      <div class="telemetry-val" id="distStart">-- m</div>
+    </div>
+    <div class="telemetry-card">
+      <div class="telemetry-label">Dist To Finish</div>
+      <div class="telemetry-val" id="distFinish">-- m</div>
+    </div>
+  </div>
+
+  <div class="status-box status-standby" id="statusBox">DISARMED — PASTE COORDINATES & ARM</div>
+
+  <div class="log-panel">
+    <div class="panel-title">
+      <span>Stage Log (Local Storage)</span>
+      <button class="btn-clear" id="btnClearLogs">CLEAR</button>
+    </div>
+
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>RUN</th>
+          <th>TIME</th>
+          <th>DATE</th>
+        </tr>
+      </thead>
+      <tbody id="logTableBody">
+        </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  let stageState = 'DISARMED';
+  let watchId = null;
+  let timerInterval = null;
+  let startTimeMs = 0;
+  let audioCtx = null;
+
+  const CAPTURE_RADIUS_M = 20;
+
+  const startCoordsInput = document.getElementById('startCoords');
+  const finishCoordsInput = document.getElementById('finishCoords');
+  const btnArmStage = document.getElementById('btnArmStage');
+  const statusBox = document.getElementById('statusBox');
+  const stageTimer = document.getElementById('stageTimer');
+  const distStartEl = document.getElementById('distStart');
+  const distFinishEl = document.getElementById('distFinish');
+  const gpsSignalEl = document.getElementById('gpsSignal');
+  const blocks = document.querySelectorAll('.light-block');
+  const logTableBody = document.getElementById('logTableBody');
+
+  if (localStorage.getItem('rally_start_coords')) startCoordsInput.value = localStorage.getItem('rally_start_coords');
+  if (localStorage.getItem('rally_finish_coords')) finishCoordsInput.value = localStorage.getItem('rally_finish_coords');
+  renderLogs();
+
+  function parseCoords(inputStr) {
+    const parts = inputStr.split(',');
+    if (parts.length !== 2) return null;
+    const lat = parseFloat(parts[0].trim());
+    const lon = parseFloat(parts[1].trim());
+    if (isNaN(lat) || isNaN(lon)) return null;
+    return { lat, lon };
+  }
+
+  function getDistanceMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function speakVoice(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  function playBeep(freq = 800, duration = 0.1) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.3;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { console.error(e); }
+  }
+
+  function handleGpsPosition(pos) {
+    const userLat = pos.coords.latitude;
+    const userLon = pos.coords.longitude;
+
+    gpsSignalEl.textContent = "GPS: ACTIVE";
+    gpsSignalEl.style.color = "#00ff44";
+
+    const startC = parseCoords(startCoordsInput.value);
+    const finishC = parseCoords(finishCoordsInput.value);
+
+    if (!startC || !finishC) return;
+
+    const dStart = getDistanceMeters(userLat, userLon, startC.lat, startC.lon);
+    const dFinish = getDistanceMeters(userLat, userLon, finishC.lat, finishC.lon);
+
+    distStartEl.textContent = `${Math.round(dStart)} m`;
+    distFinishEl.textContent = `${Math.round(dFinish)} m`;
+
+    if (stageState === 'ARMED_APPROACH') {
+      if (dStart <= CAPTURE_RADIUS_M) {
+        startCountdownSequence();
+      }
+    } else if (stageState === 'STAGE_RUNNING') {
+      if (dFinish <= CAPTURE_RADIUS_M) {
+        finishStageRun();
+      }
+    }
+  }
+
+  function handleGpsError(err) {
+    gpsSignalEl.textContent = "GPS: ERROR";
+    gpsSignalEl.style.color = "#ff4444";
+    statusBox.textContent = `GPS ERROR: ${err.message}`;
+  }
+
+  function startCountdownSequence() {
+    stageState = 'COUNTDOWN';
+    statusBox.textContent = "IN START ZONE – 1 MINUTE TO LAUNCH";
+    statusBox.className = "status-box status-arm";
+
+    speakVoice("In start zone, 1 minute to launch");
+
+    let remainingSeconds = 60;
+
+    const countdownTimer = setInterval(() => {
+      remainingSeconds--;
+
+      if (remainingSeconds <= 5 && remainingSeconds >= 1) {
+        blocks.forEach(b => b.className = 'light-block');
+        const count = 6 - remainingSeconds;
+        for (let i = 0; i < count; i++) blocks[i].classList.add('red');
+        
+        statusBox.textContent = `LAUNCH IN: 00:0${remainingSeconds}`;
+        playBeep(750, 0.08);
+      } 
+      else if (remainingSeconds <= 0) {
+        clearInterval(countdownTimer);
+        blocks.forEach(b => {
+          b.className = 'light-block';
+          b.classList.add('green');
+        });
+        playBeep(1200, 0.4);
+        
+        stageState = 'STAGE_RUNNING';
+        statusBox.textContent = ">>> STAGE RUNNING <<<";
+        statusBox.className = "status-box status-go";
+        startTimeMs = performance.now();
+
+        timerInterval = setInterval(updateStageTimerDisplay, 10);
+      }
+    }, 1000);
+  }
+
+  function updateStageTimerDisplay() {
+    const elapsed = performance.now() - startTimeMs;
+    stageTimer.textContent = formatTime(elapsed);
+  }
+
+  function finishStageRun() {
+    clearInterval(timerInterval);
+    const finalElapsedMs = performance.now() - startTimeMs;
+    stageTimer.textContent = formatTime(finalElapsedMs);
+
+    stageState = 'FINISHED';
+    statusBox.textContent = `FINISH CROSSED — TIME LOGGED!`;
+    statusBox.className = "status-box status-finish";
+
+    saveRunLog(finalElapsedMs);
+    
+    setTimeout(() => {
+      blocks.forEach(b => b.className = 'light-block');
+    }, 5000);
+  }
+
+  function formatTime(ms) {
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    const millis = Math.floor(ms % 1000);
+    const pad = (n, len = 2) => String(n).padStart(len, '0');
+    return `${pad(mins)}:${pad(secs)}.${pad(millis, 3)}`;
+  }
+
+  function saveRunLog(elapsedMs) {
+    const logs = JSON.parse(localStorage.getItem('rally_stage_logs') || '[]');
+    const now = new Date();
+    logs.unshift({
+      run: logs.length + 1,
+      timeFormatted: formatTime(elapsedMs),
+      date: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+    });
+    localStorage.setItem('rally_stage_logs', JSON.stringify(logs));
+    renderLogs();
+  }
+
+  function renderLogs() {
+    const logs = JSON.parse(localStorage.getItem('rally_stage_logs') || '[]');
+    logTableBody.innerHTML = '';
+    if (logs.length === 0) {
+      logTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#555;">No stage runs recorded</td></tr>';
+      return;
+    }
+    logs.forEach(log => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>#${log.run}</td><td>${log.timeFormatted}</td><td>${log.date}</td>`;
+      logTableBody.appendChild(tr);
+    });
+  }
+
+  btnArmStage.addEventListener('click', () => {
+    if ('speechSynthesis' in window) {
+      const initUtterance = new SpeechSynthesisUtterance('');
+      window.speechSynthesis.speak(initUtterance);
+    }
+
+    if (stageState === 'DISARMED' || stageState === 'FINISHED') {
+      const s = parseCoords(startCoordsInput.value);
+      const f = parseCoords(finishCoordsInput.value);
+
+      if (!s || !f) {
+        alert('Please enter valid decimal coordinates for both Start and Finish (e.g. 52.146880,-4.056890)');
+        return;
+      }
+
+      localStorage.setItem('rally_start_coords', startCoordsInput.value);
+      localStorage.setItem('rally_finish_coords', finishCoordsInput.value);
+
+      if ("geolocation" in navigator) {
+        watchId = navigator.geolocation.watchPosition(handleGpsPosition, handleGpsError, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000
+        });
+        stageState = 'ARMED_APPROACH';
+        btnArmStage.textContent = "DISARM STAGE";
+        btnArmStage.classList.add('armed');
+        statusBox.textContent = "ARMED: APPROACHING START GEOFENCE";
+        statusBox.className = "status-box status-arm";
+      } else {
+        alert("Geolocation is not supported by your device browser.");
+      }
+    } else {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+      clearInterval(timerInterval);
+      stageState = 'DISARMED';
+      btnArmStage.textContent = "ARM GPS STAGE TIMING";
+      btnArmStage.classList.remove('armed');
+      statusBox.textContent = "DISARMED — PASTE COORDINATES & ARM";
+      statusBox.className = "status-box status-standby";
+      distStartEl.textContent = "-- m";
+      distFinishEl.textContent = "-- m";
+      gpsSignalEl.textContent = "GPS: OFF";
+      gpsSignalEl.style.color = "#ff4444";
+      blocks.forEach(b => b.className = 'light-block');
+    }
+  });
+
+  document.getElementById('btnClearLogs').addEventListener('click', () => {
+    localStorage.removeItem('rally_stage_logs');
+    renderLogs();
+  });
+</script>
+</body>
+</html>
