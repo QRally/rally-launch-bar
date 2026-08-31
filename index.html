@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rally Launch Bar v1.2</title>
+  <title>Rally Launch Bar v1.2b</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -101,6 +101,11 @@
       letter-spacing: 0.5px;
     }
 
+    .input-with-btn {
+      display: flex;
+      gap: 6px;
+    }
+
     input[type="text"] {
       background: #0a0a0f;
       border: 1px solid #333348;
@@ -116,6 +121,24 @@
     input[type="text"]:focus {
       outline: none;
       border-color: #0088ff;
+    }
+
+    .btn-small {
+      background: #1a2a3a;
+      border: 1px solid #0088ff;
+      color: #0088ff;
+      font-size: 0.75rem;
+      font-family: 'Share Tech Mono', monospace;
+      padding: 0 12px;
+      border-radius: 6px;
+      white-space: nowrap;
+      cursor: pointer;
+      width: auto;
+    }
+
+    .btn-small:hover {
+      background: #0088ff;
+      color: #fff;
     }
 
     /* Launch Bar Housing */
@@ -220,7 +243,7 @@
       color: #eee;
     }
 
-    button {
+    button.btn-main {
       background-color: #0066cc;
       color: #fff;
       border: 1px solid #0088ff;
@@ -232,7 +255,7 @@
       width: 100%;
     }
 
-    button.armed {
+    button.btn-main.armed {
       background-color: #cc2b2b;
       border-color: #ff4444;
     }
@@ -288,7 +311,7 @@
   
   <div class="app-header">
     <h1 class="app-title">Rally Launch Bar</h1>
-    <div class="app-subtitle">GPS Stage Test System v1.2</div>
+    <div class="app-subtitle">GPS Stage Test System v1.2b</div>
   </div>
 
   <div class="setup-panel">
@@ -299,7 +322,10 @@
 
     <div class="input-group">
       <label for="startCoords">Start Geofence (Lat, Long)</label>
-      <input type="text" id="startCoords" value="52.146880,-4.056890" placeholder="e.g. 52.146880,-4.056890">
+      <div class="input-with-btn">
+        <input type="text" id="startCoords" value="52.146880,-4.056890" placeholder="e.g. 52.146880,-4.056890">
+        <button type="button" class="btn-small" id="btnSetCurrentStart">SET CURRENT</button>
+      </div>
     </div>
 
     <div class="input-group">
@@ -307,7 +333,7 @@
       <input type="text" id="finishCoords" value="52.152100,-4.049800" placeholder="e.g. 52.152100,-4.049800">
     </div>
 
-    <button id="btnArmStage">ARM GPS STAGE TIMING</button>
+    <button class="btn-main" id="btnArmStage">ARM GPS STAGE TIMING</button>
   </div>
 
   <div class="clock-housing">
@@ -335,7 +361,7 @@
     </div>
   </div>
 
-  <div class="status-box status-standby" id="statusBox">DISARMED — PASTE COORDINATES & ARM</div>
+  <div class="status-box status-standby" id="statusBox">DISARMED — SET START & ARM</div>
 
   <div class="log-panel">
     <div class="panel-title">
@@ -352,7 +378,7 @@
         </tr>
       </thead>
       <tbody id="logTableBody">
-        </tbody>
+      </tbody>
     </table>
   </div>
 
@@ -369,6 +395,7 @@
 
   const startCoordsInput = document.getElementById('startCoords');
   const finishCoordsInput = document.getElementById('finishCoords');
+  const btnSetCurrentStart = document.getElementById('btnSetCurrentStart');
   const btnArmStage = document.getElementById('btnArmStage');
   const statusBox = document.getElementById('statusBox');
   const stageTimer = document.getElementById('stageTimer');
@@ -429,6 +456,32 @@
     } catch (e) { console.error(e); }
   }
 
+  // Quick button to lock current GPS fix into Start input
+  btnSetCurrentStart.addEventListener('click', () => {
+    if ("geolocation" in navigator) {
+      statusBox.textContent = "FETCHING CURRENT GPS FIX...";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lon = pos.coords.longitude.toFixed(6);
+          startCoordsInput.value = `${lat},${lon}`;
+          localStorage.setItem('rally_start_coords', startCoordsInput.value);
+          gpsSignalEl.textContent = "GPS: ACTIVE";
+          gpsSignalEl.style.color = "#00ff44";
+          statusBox.textContent = "START LOCATION SET TO CURRENT GPS";
+          statusBox.className = "status-box status-standby";
+        },
+        (err) => {
+          alert(`Could not acquire GPS location: ${err.message}`);
+          statusBox.textContent = "GPS FIX FAILED";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  });
+
   function handleGpsPosition(pos) {
     const userLat = pos.coords.latitude;
     const userLon = pos.coords.longitude;
@@ -475,6 +528,12 @@
 
     const countdownTimer = setInterval(() => {
       remainingSeconds--;
+
+      if (remainingSeconds === 30) {
+        speakVoice("30 seconds to launch");
+      } else if (remainingSeconds === 10) {
+        speakVoice("10 seconds to launch");
+      }
 
       if (remainingSeconds <= 5 && remainingSeconds >= 1) {
         blocks.forEach(b => b.className = 'light-block');
@@ -595,7 +654,7 @@
       stageState = 'DISARMED';
       btnArmStage.textContent = "ARM GPS STAGE TIMING";
       btnArmStage.classList.remove('armed');
-      statusBox.textContent = "DISARMED — PASTE COORDINATES & ARM";
+      statusBox.textContent = "DISARMED — SET START & ARM";
       statusBox.className = "status-box status-standby";
       distStartEl.textContent = "-- m";
       distFinishEl.textContent = "-- m";
